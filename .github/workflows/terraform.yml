@@ -27,7 +27,7 @@ on:
 
 jobs:
    terraform:
-     runs-on: ubuntu-latest, ubuntu-24.04
+     runs-on: ubuntu-latest
      defaults:
        run:
          shell: bash
@@ -50,12 +50,12 @@ jobs:
             run:  | 
               cd tf-infra && terraform init \
               -backend-config="bucket=${{ inputs.aws-state-file }}" \
-              -backend-config="key=${{ github.event.respository.name  }}" \
+              -backend-config="key=${{ github.event.repository.name  }}" \
               -backend-config="region=${{  inputs.aws-region }}" \
               -backend-config="dynamo=${{  inputs.aws-lock-dynamo-table }}" \
 
           - name: terraform Validate
-            run:  terraform Validate
+            run:  terraform validate
 
           - name: Terraform Plan
             id: terraform-plan
