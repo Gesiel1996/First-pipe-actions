@@ -57,14 +57,14 @@ jobs:
             run:  terraform Validate
 
           - name: Terraform Plan
-            id: ${{github.run.number}}
+            id: '_'
             run:  cd tf-infra &&
               terraform workspace select ${{ inputs.environment }} || terraform workspace new  ${{ inputs.environment }} &&
               terraform plan -var-file="./envs/${{ inputs.environment }}/terraform.tfvars" -out "${{ inputs.environment }}.plan" 
 
           
           - name: Terraform Apply
-            id: ${{github.run.number}}
+            id: '_'
             run:  cd tf-infra &&
               terraform workspace select ${{ inputs.environment }} || terraform workspace new  ${{ inputs.environment }} &&
               terraform apply "${{ inputs.environment }}.plan" 
