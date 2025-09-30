@@ -1,79 +1,56 @@
 name: "Terraform Workflow"
 
 on:
- workflow_call:
+  workflow_call:
     inputs:
       environment:
-        description: 'The environment to deploy to'
+        description: "The environment to deploy to"
         required: true
         type: string
       aws-assume-role-arn:
-          description: 'The role to assume'
-          required: true
-          type: string
+        description: "The role to assume"
+        required: true
+        type: string
       aws-state-file:
-          description: 'The S3 state file'
-          required: true
-          type: string
+        description: "The S3 state file"
+        required: true
+        type: string
       aws-region:
-          description: 'The AWS region'
-          required: true
-          type: string
+        description: "The AWS region"
+        required: true
+        type: string
       aws-lock-dynamo-table:
-          description: 'The DynamoDB table for state locking'
-          required: true
-          type: string
-
+        description: "The DynamoDB table for state locking"
+        required: true
+        type: string
 
 jobs:
-   terraform:
-     runs-on: ubuntu-latest
-     defaults:
-       run:
-         shell: bash
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-     steps:
-          - name: Checkout code
-            uses: actions/checkout@v5.0.0
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v2
 
-          - name: Setup terraform
-            uses: hashicorp/setup-terraform@v2.0.3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ inputs.aws-assume-role-arn }}
+          role-session-name: GitHub_actions
+          aws-region: ${{ inputs.aws-region }}
 
-          - name: Configure AWS Credencials
-            uses: aws-actions/configure-aws-credentials@v5.0.0
-            with:
-              role-to-assume: ${{ inputs.aws-assume-role-arn }}
-              role-session-name: GitHUb_actions
-              aws-region: ${{ inputs.aws-region }}
+      - name: Terraform Init
+        run: |
+          cd tf-infra && terraform init \
+            -backend-config="bucket=${{ inputs.aws-state-file }}" \
+            -backend-config="key=${{ github.event.repository.name }}" \
+            -backend-config="region=${{ inputs.aws-region }}" \
+            -backend-config="dynamodb_table=${{ inputs.aws-lock-dynamo-table }}"
 
-          - name: Terraform Init
-            run:  | 
-              cd tf-infra && terraform init \
-              -backend-config="bucket=${{ inputs.aws-state-file }}" \
-              -backend-config="key=${{ github.event.repository.name  }}" \
-              -backend-config="region=${{  inputs.aws-region }}" \
-              -backend-config="dynamo-table=${{  inputs.aws-lock-dynamo-table }}" \
-
-          - name: terraform Validate
-            run:  terraform validate
-
-          - name: Terraform Plan
-            id: terraform-plan
-            run:  cd tf-infra &&
-              terraform workspace select ${{ inputs.environment }} || terraform workspace new  ${{ inputs.environment }} &&
-              terraform plan -var-file="./envs/${{ inputs.environment }}/terraform.tfvars" -out "${{ inputs.environment }}.plan" 
-
-          
-          - name: Terraform Apply
-            id: terraform-apply 
-            run:  cd tf-infra &&
-              terraform workspace select ${{ inputs.environment }} || terraform workspace new  ${{ inputs.environment }} &&
-              terraform apply "${{ inputs.environment }}.plan" 
-
-
-
-
-
+      - name: Terraform Validate
+        run: terraform validate
 
               
 
