@@ -7,3 +7,4 @@ resource "aws_bucket" "example" {
     Environment = "Dev/prd"
   }
 }
+
